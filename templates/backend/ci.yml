@@ -1,0 +1,40 @@
+# =============================================================================
+# CI — Repositorio Backend
+# Archivo a colocar en: Tarffic-Simulator/Backend/.github/workflows/ci.yml
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    name: Backend CI
+    uses: Tarffic-Simulator/Workflow/.github/workflows/reusable-backend-ci.yml@main
+    with:
+      language: python
+      python-version: "3.11"
+    secrets: inherit
+
+  notify:
+    name: Notify DevOps
+    needs: ci
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch event to Workflow repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEVOPS_DISPATCH_TOKEN }}
+          repository: Tarffic-Simulator/Workflow
+          event-type: backend-push
+          client-payload: >
+            {
+              "sha": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}",
+              "actor": "${{ github.actor }}",
+              "status": "success"
+            }

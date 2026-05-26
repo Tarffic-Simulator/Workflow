@@ -1,0 +1,115 @@
+# =============================================================================
+# WORKFLOW REUTILIZABLE — Engine CI (Python)
+#
+# Propósito: Define el pipeline de CI para el repositorio Engine.
+# Cómo usarlo desde el repo Engine (crear .github/workflows/ci.yml allá):
+#
+#   jobs:
+#     ci:
+#       uses: Tarffic-Simulator/Workflow/.github/workflows/reusable-engine-ci.yml@main
+#       with:
+#         python-version: "3.11"
+#       secrets: inherit
+#
+# =============================================================================
+name: "[Reusable] Engine CI"
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Versión de Python a usar"
+        type: string
+        default: "3.11"
+        required: false
+      run-lint:
+        description: "Ejecutar análisis de código estático"
+        type: boolean
+        default: true
+        required: false
+      run-tests:
+        description: "Ejecutar suite de tests"
+        type: boolean
+        default: true
+        required: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # JOB: Lint — Verifica formato y calidad de código
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    if: ${{ inputs.run-lint }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+
+      - name: Install lint tools
+        run: pip install flake8 black isort
+
+      - name: Check import order (isort)
+        run: isort --check-only --diff .
+
+      - name: Check formatting (black)
+        run: black --check --diff .
+
+      - name: Lint (flake8)
+        run: |
+          flake8 . \
+            --count \
+            --max-line-length=88 \
+            --extend-ignore=E203,W503 \
+            --show-source \
+            --statistics
+
+  # ---------------------------------------------------------------------------
+  # JOB: Test — Ejecuta tests con cobertura
+  # ---------------------------------------------------------------------------
+  test:
+    name: Test & Coverage
+    runs-on: ubuntu-latest
+    if: ${{ inputs.run-tests }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          [ -f requirements.txt ]     && pip install -r requirements.txt
+          [ -f requirements-dev.txt ] && pip install -r requirements-dev.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: |
+          pytest \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

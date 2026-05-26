@@ -1,0 +1,81 @@
+# =============================================================================
+# TARFFIC-SIMULATOR — VARIABLES DE CONFIGURACIÓN
+# Único propósito: definir variables del proyecto en un solo lugar.
+# Edita SOLO este archivo para cambiar nombres de repos y configuración global.
+# =============================================================================
+
+organization: Tarffic-Simulator
+
+# -----------------------------------------------------------------------------
+# REPOSITORIOS
+# Reemplaza cada "DEFINE_*" con el nombre exacto del repo en GitHub.
+# Ejemplo: si el repo es github.com/Tarffic-Simulator/sim-engine → name: sim-engine
+# -----------------------------------------------------------------------------
+repositories:
+  engine:
+    name: Engine
+    default_branch: main
+    language: python
+    python_version: "3.11"
+
+  backend:
+    name: Backend
+    default_branch: main
+    language: python
+
+  app_movil:
+    name: mobile-app
+    default_branch: main
+    language: react-native
+    framework: expo
+
+# -----------------------------------------------------------------------------
+# AMBIENTES DE DESPLIEGUE
+# -----------------------------------------------------------------------------
+environments:
+  development:
+    branch: develop
+    auto_deploy: true
+    url: ""                              # URL del ambiente de desarrollo
+
+  staging:
+    branch: staging
+    auto_deploy: true
+    url: ""                              # URL del ambiente de staging
+
+  production:
+    branch: main
+    auto_deploy: false                   # false = requiere aprobación manual
+    url: ""                              # URL de producción
+
+# -----------------------------------------------------------------------------
+# SERVIDOR (self-hosted runner con Cloudflare)
+# -----------------------------------------------------------------------------
+server:
+  runner_label: self-hosted              # Etiqueta del runner en GitHub Actions
+
+  engine:
+    repo_path: DEFINE_PATH_ENGINE        # Ruta absoluta donde está clonado Engine
+                                         # Ejemplo: /home/user/tarffic/Engine
+    service_name: DEFINE_SERVICE_ENGINE  # Nombre del servicio a reiniciar
+                                         # Ejemplo: engine (si usa systemd)
+                                         #          o nombre del contenedor Docker
+
+  backend:
+    repo_path: DEFINE_PATH_BACKEND       # Ruta absoluta donde está clonado Backend
+                                         # Ejemplo: /home/user/tarffic/Backend
+    service_name: DEFINE_SERVICE_BACKEND # Ejemplo: backend o gunicorn
+
+  app_movil:
+    repo_path: DEFINE_PATH_APP           # Ruta absoluta donde está clonado mobile-app
+                                         # Ejemplo: /home/user/tarffic/mobile-app
+    service_name: DEFINE_SERVICE_APP     # Nombre del servicio (si aplica)
+                                         # Nota: apps móviles normalmente no tienen
+                                         # servicio en servidor — confirmar con profe
+
+# -----------------------------------------------------------------------------
+# CONFIGURACIÓN DE CI
+# -----------------------------------------------------------------------------
+ci:
+  timeout_minutes: 30                    # Tiempo máximo por job
+  fail_fast: true                        # Cancelar jobs si uno falla

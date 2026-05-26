@@ -1,0 +1,39 @@
+# =============================================================================
+# CI — Repositorio mobile-app
+# Archivo a colocar en: Tarffic-Simulator/mobile-app/.github/workflows/ci.yml
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    name: App Móvil CI
+    uses: Tarffic-Simulator/Workflow/.github/workflows/reusable-app-ci.yml@main
+    with:
+      node-version: "20"
+    secrets: inherit
+
+  notify:
+    name: Notify DevOps
+    needs: ci
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch event to Workflow repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEVOPS_DISPATCH_TOKEN }}
+          repository: Tarffic-Simulator/Workflow
+          event-type: app-push
+          client-payload: >
+            {
+              "sha": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}",
+              "actor": "${{ github.actor }}",
+              "status": "success"
+            }
