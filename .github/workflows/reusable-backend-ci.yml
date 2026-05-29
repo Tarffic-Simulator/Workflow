@@ -1,0 +1,99 @@
+# =============================================================================
+# WORKFLOW REUTILIZABLE — Backend CI
+#
+# Propósito: Define el pipeline de CI para el repositorio Backend.
+# Cómo usarlo desde el repo Backend (crear .github/workflows/ci.yml allá):
+#
+#   jobs:
+#     ci:
+#       uses: Tarffic-Simulator/Workflow/.github/workflows/reusable-backend-ci.yml@main
+#       with:
+#         language: nodejs           # nodejs | python | java | go
+#         node-version: "20"
+#       secrets: inherit
+#
+# =============================================================================
+name: "[Reusable] Backend CI"
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: "Lenguaje del backend: nodejs | python | java | go"
+        type: string
+        required: true
+      node-version:
+        description: "Versión de Node.js (si language=nodejs)"
+        type: string
+        default: "20"
+        required: false
+      python-version:
+        description: "Versión de Python (si language=python)"
+        type: string
+        default: "3.11"
+        required: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # JOB: CI para Node.js
+  # ---------------------------------------------------------------------------
+  ci-nodejs:
+    name: CI (Node.js)
+    runs-on: ubuntu-latest
+    if: ${{ inputs.language == 'nodejs' }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ inputs.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm test --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+  # ---------------------------------------------------------------------------
+  # JOB: CI para Python
+  # ---------------------------------------------------------------------------
+  ci-python:
+    name: CI (Python)
+    runs-on: ubuntu-latest
+    if: ${{ inputs.language == 'python' }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ inputs.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          [ -f requirements.txt ] && pip install -r requirements.txt
+          pip install pytest flake8
+
+      - name: Lint
+        run: flake8 . --count --max-line-length=88 --statistics
+
+      - name: Run tests
+        run: pytest -v
+
+  # ---------------------------------------------------------------------------
+  # TODO: Agregar jobs para java, go cuando se defina el lenguaje
+  # ---------------------------------------------------------------------------
